@@ -8,6 +8,10 @@
     <artifactId>zookeeperTest</artifactId>
     <version>1.0-SNAPSHOT</version>
 
+    <description>
+        The Zookeeper Testing Project.
+    </description>
+
     <properties>
         <zookeeper.version>3.4.5</zookeeper.version>
     </properties>
