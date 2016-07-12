@@ -3,6 +3,8 @@ package com.zookeeper.lock;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
@@ -14,6 +16,8 @@ import java.util.concurrent.CountDownLatch;
  */
 public class ZookeeperClient implements Watcher {
 
+    private final static Logger logger = LoggerFactory.getLogger(ZookeeperClient.class);
+
     // the zookeeper instance
     private ZooKeeper zooKeeper;
 
@@ -22,6 +26,9 @@ public class ZookeeperClient implements Watcher {
     // hard code
     private int timeout = 60000;
 
+    // connect retry count
+    private int retryCount = 6;
+
     private CountDownLatch signal = new CountDownLatch(1);
 
     public ZookeeperClient(){}
@@ -29,10 +36,28 @@ public class ZookeeperClient implements Watcher {
     // the hostName put in application
     public ZookeeperClient(String hostName) {
         this.hostName = hostName;
+        this.connect();
     }
 
-    public void connect() throws IOException {
-        zooKeeper = new ZooKeeper(hostName, timeout, this);
+    public void connect() {
+        try {
+            zooKeeper = new ZooKeeper(hostName, timeout, this);
+        } catch (Exception e) {
+            logger.error("Zookeeper create error: connect to {} zk server with exception ={}", hostName, e);
+            this.retryClient();
+        }
+    }
+
+    private void retryClient(){
+        int count = 0;
+        while(count <= retryCount){
+            try {
+                zooKeeper = new ZooKeeper(hostName, timeout, this);
+            } catch (IOException e) {
+                logger.error("Zookeeper create error: connect to {} zk server with exception ={}", hostName, e);
+            }
+            break;
+        }
     }
 
     public void process(WatchedEvent watchedEvent) {

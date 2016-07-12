@@ -2,6 +2,7 @@ package com.zookeeper.lock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
@@ -10,14 +11,14 @@ import java.io.IOException;
  *
  * The factory to build completed zookeeper connection instance.
  */
+@Component
 public class ZooKeeperClientFactory {
 
     private final static Logger logger = LoggerFactory.getLogger(ZooKeeperClientFactory.class);
 
     private String hostName;
 
-    // connect retry count
-    private int retryCount = 6;
+
 
     public ThreadLocal<ZookeeperClient> zookeeperClientConstant = new ThreadLocal<ZookeeperClient>();
 
@@ -32,29 +33,12 @@ public class ZooKeeperClientFactory {
         ZookeeperClient zkClient = zookeeperClientConstant.get();
         if(zkClient == null){
             zkClient = new ZookeeperClient(hostName);
-            try {
-                zkClient.connect();
-            } catch (Exception e) {
-                logger.error("Zookeeper create error: connect to {} zk server with exception ={}", hostName, e);
-                this.retryClient(zkClient);
-            }
+
             // success build client
             zookeeperClientConstant.set(zkClient);
             return zkClient;
         }else{
             return zkClient;
-        }
-    }
-
-    private void retryClient(ZookeeperClient zookeeperClient){
-        int count = 0;
-        while(count <= retryCount){
-            try {
-                zookeeperClient.connect();
-                break;
-            } catch (IOException e) {
-                logger.warn("Zookeeper create warn: retry time zk server with exception ={}", count, e);
-            }
         }
     }
 
